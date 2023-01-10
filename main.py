@@ -3,11 +3,9 @@ from collections import UserDict
 
 class Field:
     """Parent class for all fields"""
+
     def __init__(self, value):
         self.value = value
-
-    def __str__(self):
-        return self.value
 
     def __repr__(self):
         return self.value
@@ -15,12 +13,14 @@ class Field:
 
 class Name(Field):
     """Required field with username"""
+
     def __init__(self, value):
         super().__init__(value)
 
 
 class Phone(Field):
     """Optional field with phone numbers"""
+
     @staticmethod
     def sanitize_number(number):
         """Return phone number that only include digits"""
@@ -37,24 +37,21 @@ class Record:
 
     def __init__(self, name: Name, phone: Phone = None):
         self.name = name
+        self.phone = phone
         self.phones = []
         if phone:
             self.phones.append(phone)
 
-    def add_phone(self, phone):
+    def add_phone(self, phone: Phone):
         self.phones.append(phone)
 
     def change(self, old_p, new_p):
         for phone in self.phones:
-            if old_p == phone.value:
+            if phone.value == old_p:
                 self.phones.remove(phone)
                 self.phones.append(Phone(new_p))
-
-    def delete_phone(self, phone):
-        if phone:
-            self.phones.remove(phone)
-        else:
-            raise IndexError
+                return
+        return f"Phone {old_p} was not found in your records"
 
 
 class AddressBook(UserDict):
@@ -80,11 +77,10 @@ class AddressBook(UserDict):
             return '\n'.join(result)
         return "Your address book is empty"
 
-    def change_record(self, old_ph, new_ph, name):
-        rec = self.data.get(name)
-        if rec:
-            rec.change(old_ph, new_ph)
-
+    def change_record(self, username, old_n, new_n):
+        record = self.data.get(username.value)
+        if record:
+            record.change(old_n, new_n)
 
 def error_handler(func):
     def wrapper(*args):
@@ -124,7 +120,6 @@ def add(*args):
     name = Name(args[0])
     phone = Phone(args[1])
     rec = ADDRESSBOOK.get(name.value)
-
 
     if name.value in ADDRESSBOOK.show_all_records():
         while True:
@@ -166,14 +161,14 @@ def show_all(*args):
 @error_handler
 def change(*args):
     """Replace phone number for an existing contact"""
-    name = args[0]
+    name = Name(args[0])
     old_ph = args[1]
     new_ph = args[2]
 
     if not new_ph.isnumeric():
         raise ValueError
 
-    ADDRESSBOOK.change_record(old_ph, new_ph, name)
+    ADDRESSBOOK.change_record(name, old_ph, new_ph)
     return f"You just changed number for contact '{name}'. New number is '{new_ph}'"
 
 
@@ -218,7 +213,8 @@ def command_parser(user_input):
 
 
 def main():
-    print("Here's a list of available commands: 'Hello', 'Add', 'Change', 'Phone', 'Show all', 'Delete', 'Help', 'Exit'")
+    print(
+        "Here's a list of available commands: 'Hello', 'Add', 'Change', 'Phone', 'Show all', 'Delete', 'Help', 'Exit'")
     while True:
         user_input = input(">>>")
         end_words = [".", "close", "bye", "exit"]
